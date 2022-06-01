@@ -62,14 +62,16 @@ seqs = []
 save = False
 with open(args.reads, "r") as f_reads:
     for line in f_reads:
-        if line.startswith(">"): # Change Query Name in BAM file?
+        if line.startswith(">"):
+            id = "/".join(line[1:].split())
             save = True
             continue
         elif line.startswith("@"):
+            id = "/".join(line[1:].split())
             save = True
             continue
         if save:
-            seqs.append(line.strip())
+            seqs.append((id, line.strip()))
             save = False
 f_reads.close()
 
@@ -85,8 +87,9 @@ while line.startswith("@"):
 
 while seqs:
     if not line.startswith("@"):
-        read = seqs.pop()
-        line = line.split() # Change Query Name in BAM file?
+        id, read = seqs.pop()
+        line = line.split()
+        line[0] = id
         line[9] = read # Consensus sequence
         line[10] = "~"*len(read) # Qual Values: All ~ 
         line = "\t".join(line)
