@@ -59,20 +59,32 @@ if subprocess.check_call(cmd, shell=True) != 0:
 # Read FASTA or FASTQ reads
 print("Reading query sequences")
 seqs = []
-save = False
+saveFASTQ = False
+saveFASTA = False
+read = ""
 with open(args.reads, "r") as f_reads:
     for line in f_reads:
+        # Read FASTA format
         if line.startswith(">"):
+            if saveFASTA:
+                seqs.append((id, read))
+                read = ""
             id = "/".join(line[1:].split())
-            save = True
-            continue
+            saveFASTA = True
+        elif saveFASTA:
+            read = read + line.strip()
+
+        # Read FASTQ format
         elif line.startswith("@"):
             id = "/".join(line[1:].split())
-            save = True
-            continue
-        if save:
+            saveFASTQ = True
+        elif saveFASTQ:
             seqs.append((id, line.strip()))
-            save = False
+            saveFASTQ = False
+
+if saveFASTA:
+    seqs.append((id, read))
+        
 f_reads.close()
 
 # Covert to IsoSeq3 BAM
@@ -87,7 +99,7 @@ while line.startswith("@"):
 
 while seqs:
     if not line.startswith("@"):
-        id, read = seqs.pop()
+        id, read = seqs.pop(0)
         line = line.split()
         line[0] = id
         line[9] = read # Consensus sequence
